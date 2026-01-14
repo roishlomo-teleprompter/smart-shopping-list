@@ -2,21 +2,10 @@
 export interface ShoppingItem {
   id: string;
   name: string;
-  category: string;
-  completed: boolean;
-  quantity?: string;
+  isPurchased: boolean;
+  isFavorite: boolean;
+  createdAt: number;
+  purchasedAt?: number;
 }
 
-export enum ViewMode {
-  LIST = 'LIST',
-  VOICE = 'VOICE',
-  RECIPE = 'RECIPE'
-}
-
-export interface GeminiCategorization {
-  items: Array<{
-    name: string;
-    category: string;
-    quantity?: string;
-  }>;
-}
+export type Tab = 'list' | 'favorites';
