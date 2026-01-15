@@ -13,7 +13,7 @@ import {
 import { 
   doc, setDoc, updateDoc, onSnapshot, collection, 
   query, where, getDocs, arrayUnion, runTransaction, 
-  Timestamp, deleteDoc, getDoc, serverTimestamp
+  Timestamp, deleteDoc, getDoc, serverTimestamp, deleteField
 } from 'firebase/firestore';
 import { GoogleGenAI } from "@google/genai";
 import { auth, db, googleProvider } from './firebase.ts';
@@ -51,7 +51,7 @@ const InvitePage: React.FC = () => {
 
         transaction.update(listDocRef, {
           sharedWith: arrayUnion(user.uid),
-          [`pendingInvites.${token}`]: null // cleanup
+        [`pendingInvites.${token}`]: deleteField()
         });
       });
       navigate('/');
@@ -112,18 +112,19 @@ const MainList: React.FC = () => {
       setAuthLoading(false);
       if (u) {
         // Find or create default list for user
-        const q = query(collection(db, "lists"), where("ownerUid", "==", u.uid));
+       const q = query(collection(db, "lists"), where("sharedWith", "array-contains", u.uid));
         const snap = await getDocs(q);
         if (snap.empty) {
           const newListRef = doc(collection(db, "lists"));
-          const newList: ShoppingList = {
-            id: newListRef.id,
-            title: "הרשימה שלי",
-            ownerUid: u.uid,
-            sharedWith: [],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          };
+         const newList: ShoppingList = {
+          id: newListRef.id,
+          title: "הרשימה שלי",
+          ownerUid: u.uid,
+          sharedWith: [u.uid],
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+};
+
           await setDoc(newListRef, newList);
           setList(newList);
         } else {
