@@ -360,7 +360,8 @@ const MainList: React.FC = () => {
     });
 
     const inviteLink = buildInviteLink(list.id, token);
-
+    console.log("INVITE_LINK_BUILT:", inviteLink);
+    
     await copyToClipboard(inviteLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
