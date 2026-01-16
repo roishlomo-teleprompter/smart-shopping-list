@@ -154,9 +154,7 @@ const InvitePage: React.FC = () => {
 
         <h1 className="text-2xl font-black text-slate-800">הוזמנת לרשימה</h1>
 
-        {!listId || !token ? (
-          <p className="text-rose-500 font-bold">קישור ההזמנה לא תקין</p>
-        ) : null}
+        {!listId || !token ? <p className="text-rose-500 font-bold">קישור ההזמנה לא תקין</p> : null}
 
         {error ? <p className="text-rose-500 font-bold break-words">{error}</p> : null}
 
@@ -361,7 +359,7 @@ const MainList: React.FC = () => {
 
     const inviteLink = buildInviteLink(list.id, token);
     console.log("INVITE_LINK_BUILT:", inviteLink);
-    
+
     await copyToClipboard(inviteLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -413,12 +411,20 @@ const MainList: React.FC = () => {
             <Trash2 className="w-5 h-5" />
           </button>
 
-          <button onClick={generateInviteLink} className="p-2 text-slate-400" title="הזמן חבר">
-            {isCopied ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
+          {/* UPDATED: single invite button (text) */}
+          <button
+            onClick={generateInviteLink}
+            className="px-3 py-2 text-indigo-600 border border-indigo-600 rounded-xl font-black"
+            title="הזמן חבר"
+          >
+            הזמן חבר
           </button>
         </div>
 
-        <h1 className="text-xl font-extrabold text-slate-800">{list?.title || "הרשימה שלי"}</h1>
+        {/* UPDATED: build marker */}
+        <h1 className="text-xl font-extrabold text-slate-800">
+          {list?.title || "הרשימה שלי"} | BUILD-INVITE-1
+        </h1>
 
         <button
           onClick={() => (!user ? signInWithPopup(auth, googleProvider) : signOut(auth))}
@@ -442,7 +448,10 @@ const MainList: React.FC = () => {
                 placeholder="מה להוסיף לרשימה?"
                 className="w-full p-4 pr-4 pl-14 rounded-2xl border border-slate-200 shadow-sm focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold text-slate-700 bg-white text-right"
               />
-              <button type="submit" className="absolute left-2.5 top-2.5 bg-indigo-600 text-white p-2.5 rounded-xl shadow-md active:scale-90 transition-all">
+              <button
+                type="submit"
+                className="absolute left-2.5 top-2.5 bg-indigo-600 text-white p-2.5 rounded-xl shadow-md active:scale-90 transition-all"
+              >
                 <Plus className="w-6 h-6" />
               </button>
             </form>
@@ -483,7 +492,10 @@ const MainList: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 overflow-hidden flex-1 justify-end cursor-pointer" onClick={() => togglePurchased(item.id)}>
+                      <div
+                        className="flex items-center gap-3 overflow-hidden flex-1 justify-end cursor-pointer"
+                        onClick={() => togglePurchased(item.id)}
+                      >
                         <span className="text-base font-bold text-slate-700 truncate">{item.name}</span>
                         <Circle className="w-6 h-6 text-slate-300 flex-shrink-0" />
                       </div>
@@ -497,11 +509,17 @@ const MainList: React.FC = () => {
                       נקנו ({purchasedItems.length})
                     </h3>
                     {purchasedItems.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-slate-100/50 rounded-2xl opacity-60 grayscale transition-all">
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 bg-slate-100/50 rounded-2xl opacity-60 grayscale transition-all"
+                      >
                         <button onClick={() => deleteItem(item.id)} className="p-2 text-slate-300">
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <div className="flex items-center gap-3 flex-1 justify-end cursor-pointer" onClick={() => togglePurchased(item.id)}>
+                        <div
+                          className="flex items-center gap-3 flex-1 justify-end cursor-pointer"
+                          onClick={() => togglePurchased(item.id)}
+                        >
                           <span className="text-base font-bold text-slate-500 line-through truncate">
                             {item.name} x{item.quantity}
                           </span>
@@ -529,7 +547,10 @@ const MainList: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {favorites.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm"
+                  >
                     <button
                       onClick={async () => {
                         if (!list?.id) return;
@@ -564,14 +585,18 @@ const MainList: React.FC = () => {
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-slate-100 h-24 flex justify-around items-center z-50 pb-8 px-10">
         <button
           onClick={() => setActiveTab("list")}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === "list" ? "text-indigo-600 scale-110" : "text-slate-300"}`}
+          className={`flex flex-col items-center gap-1 transition-all ${
+            activeTab === "list" ? "text-indigo-600 scale-110" : "text-slate-300"
+          }`}
         >
           <ListChecks className="w-7 h-7" />
           <span className="text-[10px] font-black uppercase tracking-widest">רשימה</span>
         </button>
         <button
           onClick={() => setActiveTab("favorites")}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === "favorites" ? "text-indigo-600 scale-110" : "text-slate-300"}`}
+          className={`flex flex-col items-center gap-1 transition-all ${
+            activeTab === "favorites" ? "text-indigo-600 scale-110" : "text-slate-300"
+          }`}
         >
           <Star className="w-7 h-7" />
           <span className="text-[10px] font-black uppercase tracking-widest">מועדפים</span>
