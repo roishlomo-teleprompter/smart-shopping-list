@@ -20,18 +20,27 @@ import { ShoppingItem, ShoppingList, Tab } from './types.ts';
 const InvitePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const listId = searchParams.get('listId');
   const token = searchParams.get('token');
+
   const [user, setUser] = useState<FirebaseUser | null>(auth.currentUser);
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => setUser(u));
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setAuthChecked(true);
+    });
+    return () => unsub();
   }, []);
 
   const handleJoin = async () => {
     if (!user || !listId || !token) return;
+
     setLoading(true);
     setError(null);
 
@@ -39,6 +48,7 @@ const InvitePage: React.FC = () => {
       await runTransaction(db, async (transaction) => {
         const listDocRef = doc(db, "lists", listId);
         const listSnap = await transaction.get(listDocRef);
+
         if (!listSnap.exists()) throw new Error("הרשימה לא קיימת");
 
         const data = listSnap.data() as ShoppingList;
@@ -49,13 +59,12 @@ const InvitePage: React.FC = () => {
 
         transaction.update(listDocRef, {
           sharedWith: arrayUnion(user.uid),
-          [`pendingInvites.${token}`]: deleteField()
+          [`pendingInvites.${token}`]: deleteField(),
         });
       });
 
-      // לשמור את הרשימה הפעילה
       localStorage.setItem("activeListId", listId);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (e: any) {
       setError(e?.message || "שגיאה לא ידועה");
     } finally {
@@ -63,13 +72,36 @@ const InvitePage: React.FC = () => {
     }
   };
 
+  // אם חסר listId/token - לא להיעלם, להציג שגיאה ברורה
+  if (!listId || !token) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 dir-rtl" dir="rtl">
+        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full space-y-4 text-center">
+          <h1 className="text-xl font-black text-slate-800">לינק הזמנה לא תקין</h1>
+          <p className="text-slate-500 font-bold">חסר listId או token</p>
+        </div>
+      </div>
+    );
+  }
+
+  // עד שוידאנו auth - מסך טעינה (מונע "קפיצה")
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center dir-rtl" dir="rtl">
       <div className="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full space-y-6">
         <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
           <Share2 className="w-10 h-10" />
         </div>
+
         <h1 className="text-2xl font-black text-slate-800">הוזמנת לרשימה</h1>
+
         {error && <p className="text-rose-500 font-bold">{error}</p>}
 
         {!user ? (
@@ -86,13 +118,14 @@ const InvitePage: React.FC = () => {
             disabled={loading}
             className="w-full bg-emerald-500 text-white py-4 rounded-2xl font-black shadow-lg shadow-emerald-100 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'הצטרף לרשימה'}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : "הצטרף לרשימה"}
           </button>
         )}
       </div>
     </div>
   );
 };
+
 
 // --- Main List Component ---
 const MainList: React.FC = () => {
