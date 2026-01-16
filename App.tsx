@@ -110,28 +110,30 @@ const MainList: React.FC = () => {
     return onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setAuthLoading(false);
-      if (u) {
-        // Find or create default list for user
-       const q = query(collection(db, "lists"), where("sharedWith", "array-contains", u.uid));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          const newListRef = doc(collection(db, "lists"));
-         const newList: ShoppingList = {
-          id: newListRef.id,
-          title: "הרשימה שלי",
-          ownerUid: u.uid,
-          sharedWith: [u.uid],
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-};
+if (u) {
+  const q = query(collection(db, "lists"), where("sharedWith", "array-contains", u.uid));
+  const snap = await getDocs(q);
 
-          await setDoc(newListRef, newList);
-          setList(newList);
-        } else {
-          // If multiple, just pick the first for now
-          setList(snap.docs[0].data() as ShoppingList);
-        }
-      }
+  if (snap.empty) {
+    const newListRef = doc(collection(db, "lists"));
+    const newList: ShoppingList = {
+      id: newListRef.id,
+      title: "הרשימה שלי",
+      ownerUid: u.uid,
+      sharedWith: [u.uid],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    await setDoc(newListRef, newList);
+    setList(newList);
+  } else {
+    const first = snap.docs[0];
+    const data = first.data() as ShoppingList;
+    setList({ ...data, id: first.id });
+  }
+}
+
     });
   }, []);
 
@@ -238,7 +240,7 @@ const MainList: React.FC = () => {
       [`pendingInvites.${token}`]: { createdAt: Date.now(), expiresAt }
     });
 
-    const inviteLink = `${window.location.origin}${window.location.pathname}#/invite?listId=${list.id}&token=${token}`;
+    const inviteLink = `${window.location.origin}/Shopping-List/#/invite?listId=${list.id}&token=${token}`;
     navigator.clipboard.writeText(inviteLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
