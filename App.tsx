@@ -21,8 +21,13 @@ const InvitePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const listId = searchParams.get('listId');
-  const token = searchParams.get('token');
+useEffect(() => {
+  const hash = window.location.hash || "";
+  if (!hash.startsWith("#/invite")) {
+    window.location.hash = `#/invite?listId=${listId ?? ""}&token=${token ?? ""}`;
+  }
+}, [listId, token]);
+
 
   const [user, setUser] = useState<FirebaseUser | null>(auth.currentUser);
   const [authChecked, setAuthChecked] = useState(false);
@@ -549,12 +554,13 @@ const MainList: React.FC = () => {
 };
 
 const App: React.FC = () => (
- <HashRouter>
-  <Routes>
-    <Route path="/invite" element={<InvitePage />} />
-    <Route path="/*" element={<MainList />} />
-  </Routes>
-</HashRouter>
+  <HashRouter>
+    <Routes>
+      <Route path="/invite" element={<InvitePage />} />
+      <Route path="/*" element={<MainList />} />
+    </Routes>
+  </HashRouter>
 );
 
 export default App;
+
