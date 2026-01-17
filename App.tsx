@@ -472,22 +472,27 @@ const MainList: React.FC = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // כפתור "שתף רשימה" בוואטסאפ: בלי קישור הצטרפות, פורמט <כמות>X <פריט>
+  // כפתור "שתף רשימה" בוואטסאפ: בלי קישור הצטרפות, פורמט <פריט> X <כמות>, מיושר לימין ו-RTL
   const shareListWhatsApp = () => {
     const title = list?.title || "הרשימה שלי";
     const active = items.filter((i) => !i.isPurchased);
 
-    // Force RTL rendering in WhatsApp (helps when item names contain Latin/Numbers)
-    const RLM = "\u200F"; // Right-to-left mark
+    // Force RTL + correct reading order in WhatsApp: <item name> X <qty>
+    // Wrap the whole line in RTL embedding and isolate the quantity as LTR so digits stay put.
+    const RLE = "\u202B";
+    const PDF = "\u202C";
+    const LRI = "\u2066";
+    const PDI = "\u2069";
 
     const lines =
       active.length > 0
-        ? active.map((i) => `${RLM}${i.quantity}X ${i.name}`).join("\n")
-        : `${RLM}(הרשימה כרגע ריקה)`;
+        ? active.map((i) => `${RLE}${i.name} X ${LRI}${i.quantity}${PDI}${PDF}`).join("\n")
+        : `${RLE}(הרשימה כרגע ריקה)${PDF}`;
 
     // WhatsApp bold uses *text*
-    const header = `${RLM}*${title}:*`;
-    const text = `${header}\n\n${lines}\n\n${RLM}נשלח מהרשימה החכמה 🛒`;
+    const header = `${RLE}*${title}:*${PDF}`;
+    const footer = `${RLE}נשלח מהרשימה החכמה 🛒${PDF}`;
+    const text = `${header}\n\n${lines}\n\n${footer}`;
     openWhatsApp(text);
   };
 
@@ -723,7 +728,7 @@ const MainList: React.FC = () => {
                             await setDoc(doc(db, "lists", list.id, "items", itemId), newItem);
                           }
                         }}
-                        className="px-2 py-1 text-xs rounded-lg bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
+                        className="px-1.5 py-0.5 text-[11px] rounded-md bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
                         title="הוסף לרשימה"
                       >
                         הוסף לרשימה
