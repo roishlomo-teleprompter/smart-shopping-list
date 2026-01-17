@@ -7,15 +7,15 @@ import {
   ShoppingCart,
   Plus,
   Minus,
+  MessageCircle,
   CheckCircle2,
   ListChecks,
   Check,
+  AlertCircle,
   Sparkles,
   LogOut,
   LogIn,
   Loader2,
-  AlertCircle,
-  MessageCircle,
 } from "lucide-react";
 
 import {
@@ -79,6 +79,11 @@ async function signInSmart() {
     }
     await signInWithRedirect(auth, googleProvider);
   }
+}
+
+function openWhatsApp(text: string) {
+  const message = encodeURIComponent(text);
+  window.open(`https://wa.me/?text=${message}`, "_blank");
 }
 
 // ---------------------------
@@ -326,12 +331,15 @@ const MainList: React.FC = () => {
       return;
     }
 
-    if (!inputValue.trim() || !list?.id) return;
+    if (!list?.id) return;
+
+    const name = inputValue.trim();
+    if (!name) return;
 
     const itemId = crypto.randomUUID();
     const newItem: ShoppingItem = {
       id: itemId,
-      name: inputValue.trim(),
+      name,
       quantity: 1,
       isPurchased: false,
       isFavorite: false,
@@ -422,25 +430,49 @@ const MainList: React.FC = () => {
     }
   };
 
-  const generateInviteLink = async () => {
+  const generateInviteTokenAndLink = async () => {
     if (!user) {
       await signInSmart();
-      return;
+      return null;
     }
-    if (!list?.id) return;
+    if (!list?.id) return null;
 
-    const token = [...Array(32)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
+    const token = [...Array(32)]
+      .map(() => Math.floor(Math.random() * 16).toString(16))
+      .join("");
     const expiresAt = Date.now() + 48 * 60 * 60 * 1000;
 
     await updateDoc(doc(db, "lists", list.id), {
       [`pendingInvites.${token}`]: { createdAt: Date.now(), expiresAt },
     });
 
-    const inviteLink = buildInviteLink(list.id, token);
+    return buildInviteLink(list.id, token);
+  };
 
-    await copyToClipboard(inviteLink);
+  // Header icon: copy invite link
+  const generateInviteLinkCopy = async () => {
+    const link = await generateInviteTokenAndLink();
+    if (!link) return;
+    await copyToClipboard(link);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  // Bottom button: WhatsApp share with list + invite link
+  const shareListWhatsApp = async () => {
+    if (!list?.id) return;
+
+    const active = items.filter((i) => !i.isPurchased);
+    const lines = active.map((i) => `- ${i.name} x${i.quantity}`).join("\n");
+
+    const inviteLink = await generateInviteTokenAndLink();
+
+    const title = `*${list?.title || "הרשימה שלי"}*`;
+    const body = active.length > 0 ? `\n\n${lines}` : `\n\n(הרשימה כרגע ריקה)`;
+    const invite = inviteLink ? `\n\nקישור הצטרפות:\n${inviteLink}` : "";
+    const footer = `\n\nנשלח מהרשימה החכמה 🛒`;
+
+    openWhatsApp(`${title}${body}${invite}${footer}`);
   };
 
   if (authLoading) {
@@ -480,7 +512,7 @@ const MainList: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen max-w-md mx-auto bg-slate-50 relative pb-40 shadow-2xl overflow-hidden dir-rtl" dir="rtl">
+    <div className="flex flex-col min-h-screen max-w-md mx-auto bg-slate-50 relative pb-44 shadow-2xl overflow-hidden dir-rtl" dir="rtl">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-2">
@@ -502,7 +534,11 @@ const MainList: React.FC = () => {
             <Trash2 className="w-5 h-5" />
           </button>
 
-          <button onClick={generateInviteLink} className="p-2 text-slate-400 hover:text-indigo-600" title="הזמן חבר">
+          <button
+            onClick={generateInviteLinkCopy}
+            className="p-2 text-slate-400 hover:text-indigo-600"
+            title="הזמן חבר (העתקת קישור)"
+          >
             {isCopied ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
           </button>
         </div>
@@ -521,7 +557,7 @@ const MainList: React.FC = () => {
       {/* Content */}
       <main className="flex-1 p-5 space-y-6 overflow-y-auto no-scrollbar">
         {activeTab === "list" ? (
-          <div className="space-y-6">
+          <>
             <form onSubmit={addItem} className="relative">
               <input
                 value={inputValue}
@@ -546,33 +582,198 @@ const MainList: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="space-y-3">{/* ... same list rendering as before ... */}</div>
+                <div className="space-y-3">
+                  {activeItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm"
+                      dir="rtl"
+                    >
+                      {/* צד שמאל: פח + מועדף */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => deleteItem(item.id)}
+                          className="p-2 text-slate-300 hover:text-rose-500"
+                          title="מחק"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => toggleFavorite(item.id)}
+                          className={`p-2 ${favoritesById.has(item.id) ? "text-amber-500" : "text-slate-300"}`}
+                          title="מועדף"
+                        >
+                          <Star className={`w-4 h-4 ${favoritesById.has(item.id) ? "fill-amber-500" : ""}`} />
+                        </button>
+                      </div>
+
+                      {/* אמצע: שם הפריט */}
+                      <div
+                        className="flex-1 text-right font-bold text-slate-700 truncate cursor-pointer px-3"
+                        style={{ direction: "rtl", unicodeBidi: "plaintext" }}
+                        onClick={() => togglePurchased(item.id)}
+                      >
+                        {item.name}
+                      </div>
+
+                      {/* צד ימין: כמות */}
+                      <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
+                        <button onClick={() => updateQty(item.id, -1)} className="p-1 text-slate-400" title="הפחת">
+                          <Minus className="w-3 h-3" />
+                        </button>
+
+                        <span className="min-w-[1.5rem] text-center font-black text-slate-700">{item.quantity}</span>
+
+                        <button onClick={() => updateQty(item.id, 1)} className="p-1 text-slate-400" title="הוסף">
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {purchasedItems.length > 0 ? (
+                    <div className="space-y-2 pt-4 border-t border-slate-200">
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right mb-2">
+                        נקנו ({purchasedItems.length})
+                      </h3>
+
+                      {purchasedItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 bg-slate-100/50 rounded-2xl opacity-60 grayscale transition-all"
+                          dir="rtl"
+                        >
+                          <button onClick={() => deleteItem(item.id)} className="p-2 text-slate-300" title="מחק">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+
+                          <div
+                            className="flex items-center gap-3 flex-1 justify-end cursor-pointer"
+                            onClick={() => togglePurchased(item.id)}
+                          >
+                            <span
+                              className="text-base font-bold text-slate-500 line-through truncate text-right"
+                              style={{ direction: "rtl", unicodeBidi: "plaintext" }}
+                            >
+                              {item.name} x{item.quantity}
+                            </span>
+                            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-6">
+            <div className="text-right">
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">מועדפים</h2>
+              <p className="text-sm text-slate-400 font-bold">פריטים שחוזרים לסל</p>
+            </div>
+
+            {favorites.length === 0 ? (
+              <div className="text-center py-20 opacity-20">
+                <Star className="w-16 h-16 mx-auto mb-4 stroke-1" />
+                <p className="font-bold">אין מועדפים עדיין</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {favorites.map((fav) => (
+                  <div
+                    key={fav.id}
+                    className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm"
+                    dir="rtl"
+                  >
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!list?.id) return;
+
+                          const existing = items.find((i) => !i.isPurchased && i.name.trim() === fav.name.trim());
+
+                          if (existing) {
+                            await updateQty(existing.id, 1);
+                          } else {
+                            const itemId = crypto.randomUUID();
+                            const newItem: ShoppingItem = {
+                              id: itemId,
+                              name: fav.name,
+                              quantity: 1,
+                              isPurchased: false,
+                              isFavorite: false,
+                              createdAt: Date.now(),
+                            };
+                            await setDoc(doc(db, "lists", list.id, "items", itemId), newItem);
+                          }
+
+                          setActiveTab("list");
+                        }}
+                        className="px-4 py-2 rounded-xl bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
+                        title="הוסף לרשימה"
+                      >
+                        הוסף לרשימה
+                      </button>
+
+                      <button
+                        onClick={() => removeFavorite(fav.id)}
+                        className="p-2 text-slate-300 hover:text-rose-500"
+                        title="הסר ממועדפים"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div
+                      className="flex-1 text-right font-black text-slate-700 truncate px-3"
+                      style={{ direction: "rtl", unicodeBidi: "plaintext" }}
+                    >
+                      {fav.name}
+                    </div>
+
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        ) : (
-          <div className="space-y-6">{/* ... favorites rendering as before ... */}</div>
         )}
       </main>
 
-      {/* Bottom Bar: share button left + favorites left + list right */}
+      {/* Bottom area: Share button on LEFT + bottom nav (List LEFT, Favorites RIGHT) */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <div className="max-w-md mx-auto px-4 pb-3">
-          {/* Share button aligned LEFT above bottom nav */}
-          <div className="flex justify-start mb-2">
+          {/* Share button on LEFT (screen-left) */}
+          <div className="flex justify-start mb-2" dir="ltr">
             <button
-              onClick={generateInviteLink}
+              onClick={shareListWhatsApp}
               className="flex items-center justify-center gap-2 bg-emerald-500 text-white py-3 px-6 rounded-full font-black shadow-lg shadow-emerald-200"
-              title="שתף רשימה"
+              title="שתף רשימה בוואטסאפ"
             >
               <MessageCircle className="w-5 h-5" />
               שתף רשימה
             </button>
           </div>
 
-          <footer className="bg-white border-t border-slate-200 rounded-2xl">
+          {/* Bottom nav: force LTR so left/right match the screen */}
+          <footer className="bg-white border-t border-slate-200 rounded-2xl" dir="ltr">
             <div className="flex items-center justify-between px-10 py-3">
-              {/* Favorites on the LEFT */}
+              {/* LEFT: List */}
+              <button
+                onClick={() => setActiveTab("list")}
+                className={`flex flex-col items-center gap-1 text-[11px] font-black ${
+                  activeTab === "list" ? "text-indigo-600" : "text-slate-300"
+                }`}
+                title="רשימה"
+              >
+                <ListChecks className="w-7 h-7" />
+                רשימה
+              </button>
+
+              {/* RIGHT: Favorites */}
               <button
                 onClick={() => setActiveTab("favorites")}
                 className={`flex flex-col items-center gap-1 text-[11px] font-black ${
@@ -586,18 +787,6 @@ const MainList: React.FC = () => {
                   }`}
                 />
                 מועדפים
-              </button>
-
-              {/* List on the RIGHT */}
-              <button
-                onClick={() => setActiveTab("list")}
-                className={`flex flex-col items-center gap-1 text-[11px] font-black ${
-                  activeTab === "list" ? "text-indigo-600" : "text-slate-300"
-                }`}
-                title="רשימה"
-              >
-                <ListChecks className="w-7 h-7" />
-                רשימה
               </button>
             </div>
           </footer>
