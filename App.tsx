@@ -15,6 +15,7 @@ import {
   LogIn,
   Loader2,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 
 import {
@@ -410,7 +411,8 @@ const MainList: React.FC = () => {
         contents: `אני מכין רשימת קניות. הפריטים הנוכחיים שלי הם: ${currentList}. תן לי 5 הצעות לפריטים נוספים שחסרים לי בדרך כלל עם פריטים אלו. החזר רק רשימה מופרדת בפסיקים של שמות הפריטים בעברית.`,
       });
 
-      const suggestions = response.text?.split(",").map((s) => s.trim()).filter(Boolean) || [];
+      const suggestions =
+        response.text?.split(",").map((s) => s.trim()).filter(Boolean) || [];
       if (suggestions.length > 0) {
         setInputValue(suggestions[0]);
       }
@@ -531,6 +533,16 @@ const MainList: React.FC = () => {
 
       {/* Content */}
       <main className="flex-1 p-5 space-y-6 overflow-y-auto no-scrollbar">
+        {/* Share button like the screenshot */}
+        <button
+          onClick={generateInviteLink}
+          className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white py-4 rounded-full font-black shadow-lg shadow-emerald-200"
+          title="שתף רשימה"
+        >
+          <MessageCircle className="w-5 h-5" />
+          שתף רשימה
+        </button>
+
         {activeTab === "list" ? (
           <div className="space-y-6">
             <form onSubmit={addItem} className="relative">
@@ -718,42 +730,36 @@ const MainList: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <div className="max-w-md mx-auto bg-white/90 backdrop-blur-md border-t border-slate-100 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setActiveTab("list")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-black ${
-                activeTab === "list" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"
+      {/* Bottom Nav like the screenshot */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200">
+        <div className="max-w-md mx-auto flex items-center justify-around py-3">
+          <button
+            onClick={() => setActiveTab("favorites")}
+            className={`flex flex-col items-center gap-1 text-[11px] font-black ${
+              activeTab === "favorites" ? "text-indigo-600" : "text-slate-300"
+            }`}
+            title="מועדפים"
+          >
+            <Star
+              className={`w-7 h-7 ${
+                activeTab === "favorites" ? "fill-indigo-600 text-indigo-600" : "text-slate-300"
               }`}
-              title="רשימה"
-            >
-              <ListChecks className="w-5 h-5" />
-              רשימה
-            </button>
+            />
+            מועדפים
+          </button>
 
-            <button
-              onClick={shareWhatsApp}
-              className="px-4 py-2 rounded-2xl font-black bg-emerald-500 text-white shadow-lg shadow-emerald-100"
-              title="שתף בווטסאפ"
-            >
-              שתף
-            </button>
-
-            <button
-              onClick={() => setActiveTab("favorites")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-black ${
-                activeTab === "favorites" ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-              title="מועדפים"
-            >
-              <Star className={`w-5 h-5 ${activeTab === "favorites" ? "fill-white" : ""}`} />
-              מועדפים
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab("list")}
+            className={`flex flex-col items-center gap-1 text-[11px] font-black ${
+              activeTab === "list" ? "text-indigo-600" : "text-slate-300"
+            }`}
+            title="רשימה"
+          >
+            <ListChecks className="w-7 h-7" />
+            רשימה
+          </button>
         </div>
-      </div>
+      </footer>
 
       {/* Clear Confirm Modal */}
       {showClearConfirm ? (
@@ -776,10 +782,7 @@ const MainList: React.FC = () => {
               >
                 ביטול
               </button>
-              <button
-                onClick={clearList}
-                className="flex-1 py-3 rounded-2xl font-black bg-rose-600 text-white"
-              >
+              <button onClick={clearList} className="flex-1 py-3 rounded-2xl font-black bg-rose-600 text-white">
                 מחק הכל
               </button>
             </div>
