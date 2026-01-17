@@ -490,8 +490,9 @@ const MainList: React.FC = () => {
         : `${RLE}(הרשימה כרגע ריקה)${PDF}`;
 
     // WhatsApp bold uses *text*
-    const header = `${RLE}*${title}:*${PDF}`;
-    const footer = `${RLE}נשלח מהרשימה החכמה 🛒${PDF}`;
+ const header = `*${title}:*`;
+const footer = `נשלח מהרשימה החכמה 🛒`;
+
     const text = `${header}\n\n${lines}\n\n${footer}`;
     openWhatsApp(text);
   };
