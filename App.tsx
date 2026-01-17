@@ -477,14 +477,17 @@ const MainList: React.FC = () => {
     const title = list?.title || "הרשימה שלי";
     const active = items.filter((i) => !i.isPurchased);
 
+    // Force RTL rendering in WhatsApp (helps when item names contain Latin/Numbers)
+    const RLM = "\u200F"; // Right-to-left mark
+
     const lines =
       active.length > 0
-        ? active.map((i) => `${i.quantity}X ${i.name}`).join("\n")
-        : "(הרשימה כרגע ריקה)";
+        ? active.map((i) => `${RLM}${i.quantity}X ${i.name}`).join("\n")
+        : `${RLM}(הרשימה כרגע ריקה)`;
 
     // WhatsApp bold uses *text*
-    const header = `*${title}:*`;
-    const text = `${header}\n\n${lines}\n\nנשלח מהרשימה החכמה 🛒`;
+    const header = `${RLM}*${title}:*`;
+    const text = `${header}\n\n${lines}\n\n${RLM}נשלח מהרשימה החכמה 🛒`;
     openWhatsApp(text);
   };
 
@@ -720,7 +723,7 @@ const MainList: React.FC = () => {
                             await setDoc(doc(db, "lists", list.id, "items", itemId), newItem);
                           }
                         }}
-                        className="px-3 py-1.5 text-sm rounded-xl bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
+                        className="px-2 py-1 text-xs rounded-lg bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
                         title="הוסף לרשימה"
                       >
                         הוסף לרשימה
