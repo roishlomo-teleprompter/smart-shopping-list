@@ -589,7 +589,14 @@ const MainList: React.FC = () => {
                           <button onClick={() => updateQty(item.id, -1)} className="p-1 text-slate-400" title="הפחת">
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="text-sm font-black text-slate-700 min-w-[1rem] text-center">{item.quantity}</span>
+                          <span
+  className="text-base font-bold text-slate-700 truncate text-right"
+  dir="rtl"
+  style={{ direction: "rtl", unicodeBidi: "plaintext" }}
+>
+  {item.name}
+</span>
+
                           <button onClick={() => updateQty(item.id, 1)} className="p-1 text-slate-400" title="הוסף">
                             <Plus className="w-3 h-3" />
                           </button>
