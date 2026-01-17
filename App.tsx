@@ -447,6 +447,31 @@ const MainList: React.FC = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  // כפתור "הזמן חבר" - פתיחת חלון שיתוף מערכת (בסמארטפון), ובדסקטופ נפילה להעתקה
+  const shareInviteLinkSystem = async () => {
+    const link = await generateInviteTokenAndLink();
+    if (!link) return;
+
+    try {
+      // Mobile share sheet (and some desktop browsers)
+      if (typeof navigator !== "undefined" && "share" in navigator) {
+        // @ts-ignore - navigator.share exists on supported browsers
+        await navigator.share({
+          title: "קישור לרשימה",
+          text: "קישור הצטרפות לרשימת קניות",
+          url: link,
+        });
+        return;
+      }
+    } catch {
+      // אם המשתמש ביטל - לא נחשב שגיאה
+    }
+
+    await copyToClipboard(link);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
   // כפתור "שתף רשימה" בוואטסאפ: בלי קישור הצטרפות, פורמט <כמות>X <פריט>
   const shareListWhatsApp = () => {
     const title = list?.title || "הרשימה שלי";
@@ -457,7 +482,9 @@ const MainList: React.FC = () => {
         ? active.map((i) => `${i.quantity}X ${i.name}`).join("\n")
         : "(הרשימה כרגע ריקה)";
 
-    const text = `${title}\n\n${lines}\n\nנשלח מהרשימה החכמה`;
+    // WhatsApp bold uses *text*
+    const header = `*${title}:*`;
+    const text = `${header}\n\n${lines}\n\nנשלח מהרשימה החכמה 🛒`;
     openWhatsApp(text);
   };
 
@@ -521,9 +548,9 @@ const MainList: React.FC = () => {
           </button>
 
           <button
-            onClick={generateInviteLinkCopy}
+            onClick={shareInviteLinkSystem}
             className="p-2 text-slate-400 hover:text-indigo-600"
-            title="הזמן חבר (העתקת קישור)"
+            title="הזמן חבר"
           >
             {isCopied ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5" />}
           </button>
@@ -692,10 +719,8 @@ const MainList: React.FC = () => {
                             };
                             await setDoc(doc(db, "lists", list.id, "items", itemId), newItem);
                           }
-
-                          setActiveTab("list");
                         }}
-                        className="px-4 py-2 rounded-xl bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
+                        className="px-3 py-1.5 text-sm rounded-xl bg-emerald-500 text-white shadow-md active:scale-90 transition-transform font-black"
                         title="הוסף לרשימה"
                       >
                         הוסף לרשימה
